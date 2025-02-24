@@ -268,25 +268,36 @@ class NotionClient:
     async def append_block_children(
         self,
         block_id: str,
-        children: List[Dict[str, Any]]
+        children: List[Dict[str, Any]],
+        after: Optional[str] = None
     ) -> Dict[str, Any]:
         """Append blocks to a parent block.
         
         Args:
             block_id: The ID of the parent block (page or block)
             children: List of block objects to append
+            after: Optional ID of an existing block to append after
             
         Returns:
-            Dictionary containing the response
+            Dictionary containing the response with newly created blocks
         """
         # Ensure block_id is properly formatted (remove dashes if present)
         block_id = block_id.replace("-", "")
+        
+        # Prepare request body
+        body = {"children": children}
+        if after:
+            body["after"] = after.replace("-", "")  # Ensure after ID is properly formatted
+            
+        # Log the request for debugging
+        logger.info(f"Appending {len(children)} blocks to {block_id}" + 
+                   (f" after {after}" if after else ""))
         
         async with httpx.AsyncClient() as client:
             response = await client.patch(
                 f"{self.base_url}/blocks/{block_id}/children",
                 headers=self.headers,
-                json={"children": children}
+                json=body
             )
             response.raise_for_status()
             return response.json()

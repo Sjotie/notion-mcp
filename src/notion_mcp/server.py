@@ -88,23 +88,27 @@ async def list_tools() -> List[Tool]:
         ),
         Tool(
             name="append_page_content",
-            description="Add content blocks to a Notion page",
+            description="Add content blocks to a Notion page or block",
             inputSchema={
                 "type": "object",
                 "properties": {
-                    "page_id": {
+                    "block_id": {
                         "type": "string",
-                        "description": "ID of the page to add content to (with or without dashes)"
+                        "description": "ID of the page or block to add content to (with or without dashes)"
                     },
                     "children": {
                         "type": "array",
-                        "description": "Array of block objects to add to the page. See Notion API docs for block format.",
+                        "description": "Array of block objects to add. Limited to 100 blocks per request. Example: [{\"type\": \"paragraph\", \"paragraph\": {\"rich_text\": [{\"type\": \"text\", \"text\": {\"content\": \"Hello world\"}}]}}]",
                         "items": {
                             "type": "object"
                         }
+                    },
+                    "after": {
+                        "type": "string",
+                        "description": "Optional ID of an existing block to append content after. If not specified, content is added to the end."
                     }
                 },
-                "required": ["page_id", "children"]
+                "required": ["block_id", "children"]
             }
         ),
         Tool(
@@ -405,31 +409,64 @@ async def call_tool(name: str, arguments: Any) -> Sequence[TextContent | Embedde
             if not isinstance(arguments, dict):
                 raise ValueError("Invalid arguments")
                 
-            page_id = arguments.get("page_id")
+            block_id = arguments.get("block_id")
             children = arguments.get("children")
-            if not page_id or not children:
-                raise ValueError("page_id and children are required")
+            after = arguments.get("after")
+            
+            if not block_id or not children:
+                raise ValueError("block_id and children are required")
+                
+            if len(children) > 100:
+                raise ValueError("Maximum of 100 blocks can be appended in a single request")
                 
             try:
                 result = await notion_client.append_block_children(
-                    block_id=page_id,
-                    children=children
+                    block_id=block_id,
+                    children=children,
+                    after=after
                 )
+                
+                # Format the response with helpful information
                 return [
                     TextContent(
                         type="text",
-                        text=json.dumps(result, indent=2)
+                        text=f"Successfully appended {len(children)} blocks to {block_id}" + 
+                             (f" after block {after}" if after else "") + 
+                             f"\n\nResponse:\n{json.dumps(result, indent=2)}"
                     )
                 ]
             except Exception as e:
                 error_msg = str(e)
                 logger.error(f"Error appending content: {error_msg}")
-                return [
-                    TextContent(
-                        type="text",
-                        text=f"Error appending content: {error_msg}"
-                    )
-                ]
+                
+                # Provide more helpful error information
+                if "400" in error_msg:
+                    return [
+                        TextContent(
+                            type="text",
+                            text=f"Error 400: Bad Request. Common issues include:\n"
+                                 f"1. Invalid block_id format\n"
+                                 f"2. Invalid block structure in children\n"
+                                 f"3. Block nesting too deep (max 2 levels)\n"
+                                 f"4. Invalid 'after' block ID\n\n"
+                                 f"Original error: {error_msg}"
+                        )
+                    ]
+                elif "404" in error_msg:
+                    return [
+                        TextContent(
+                            type="text",
+                            text=f"Error 404: Not Found. The block ID doesn't exist or the integration doesn't have access to it.\n\n"
+                                 f"Original error: {error_msg}"
+                        )
+                    ]
+                else:
+                    return [
+                        TextContent(
+                            type="text",
+                            text=f"Error appending content: {error_msg}"
+                        )
+                    ]
                 
         elif name == "search":
             if not isinstance(arguments, dict):
