@@ -135,6 +135,34 @@ async def list_tools() -> List[Tool]:
                 },
                 "required": ["query"]
             }
+        ),
+        Tool(
+            name="create_database",
+            description="Create a new database in Notion",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "parent_id": {
+                        "type": "string",
+                        "description": "ID of the parent page where the database will be created"
+                    },
+                    "title": {
+                        "type": "string",
+                        "description": "Title of the database"
+                    },
+                    "properties": {
+                        "type": "object",
+                        "description": "Schema definition for database properties"
+                    },
+                    "parent_type": {
+                        "type": "string",
+                        "description": "Type of parent (page_id or workspace)",
+                        "default": "page_id",
+                        "enum": ["page_id", "workspace"]
+                    }
+                },
+                "required": ["parent_id", "title", "properties"]
+            }
         )
     ]
 
@@ -227,6 +255,35 @@ async def call_tool(name: str, arguments: Any) -> Sequence[TextContent | Embedde
                 TextContent(
                     type="text",
                     text=results.model_dump_json(indent=2)
+                )
+            ]
+            
+        elif name == "create_database":
+            if not isinstance(arguments, dict):
+                raise ValueError("Invalid arguments")
+                
+            parent_id = arguments.get("parent_id")
+            title_text = arguments.get("title")
+            properties = arguments.get("properties")
+            parent_type = arguments.get("parent_type", "page_id")
+            
+            if not parent_id or not title_text or not properties:
+                raise ValueError("parent_id, title, and properties are required")
+            
+            # Convert simple title string to rich text array format
+            title = [{"type": "text", "text": {"content": title_text}}]
+            
+            database = await notion_client.create_database(
+                parent_id=parent_id,
+                title=title,
+                properties=properties,
+                parent_type=parent_type
+            )
+            
+            return [
+                TextContent(
+                    type="text",
+                    text=database.model_dump_json(indent=2)
                 )
             ]
             

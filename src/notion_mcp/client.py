@@ -116,6 +116,39 @@ class NotionClient:
             )
             response.raise_for_status()
             return Page(**response.json())
+            
+    async def create_database(
+        self,
+        parent_id: str,
+        title: List[Dict[str, Any]],
+        properties: Dict[str, Any],
+        parent_type: str = "page_id"
+    ) -> Database:
+        """Create a new database.
+        
+        Args:
+            parent_id: ID of the parent page
+            title: Database title as rich text array
+            properties: Database properties schema
+            parent_type: Type of parent (page_id or workspace)
+            
+        Returns:
+            The created database
+        """
+        body = {
+            "parent": {parent_type: parent_id},
+            "title": title,
+            "properties": properties
+        }
+        
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                f"{self.base_url}/databases",
+                headers=self.headers,
+                json=body
+            )
+            response.raise_for_status()
+            return Database(**response.json())
     
     async def search(
         self,
