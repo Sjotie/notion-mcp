@@ -3,7 +3,7 @@
 import os
 from typing import Any, Dict, List, Optional
 import httpx
-from .models.notion import Database, Page, SearchResults
+from .models.notion import Database, Page, SearchResults, PropertyValue
 
 class NotionClient:
     """Client for interacting with the Notion API."""
@@ -152,11 +152,7 @@ class NotionClient:
                 if item["object"] == "database":
                     results.append(Database(**item))
                 elif item["object"] == "page":
-                    # Convert property values to the correct format
-                    properties = {}
-                    for key, value in item.get("properties", {}).items():
-                        properties[key] = PropertyValue(**value)
-                    item["properties"] = properties
+                    # Pages already have the right property structure
                     results.append(Page(**item))
             
             return SearchResults(
