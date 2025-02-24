@@ -160,6 +160,44 @@ class NotionClient:
             )
             response.raise_for_status()
             return Database(**response.json())
+            
+    async def update_database(
+        self,
+        database_id: str,
+        title: Optional[List[Dict[str, Any]]] = None,
+        description: Optional[List[Dict[str, Any]]] = None,
+        properties: Optional[Dict[str, Any]] = None
+    ) -> Database:
+        """Update an existing database.
+        
+        Args:
+            database_id: ID of the database to update
+            title: Optional new title as rich text array
+            description: Optional new description as rich text array
+            properties: Optional updated properties schema
+            
+        Returns:
+            The updated database
+        """
+        body = {}
+        
+        if title is not None:
+            body["title"] = title
+            
+        if description is not None:
+            body["description"] = description
+            
+        if properties is not None:
+            body["properties"] = properties
+            
+        async with httpx.AsyncClient() as client:
+            response = await client.patch(
+                f"{self.base_url}/databases/{database_id}",
+                headers=self.headers,
+                json=body
+            )
+            response.raise_for_status()
+            return Database(**response.json())
     
     async def search(
         self,

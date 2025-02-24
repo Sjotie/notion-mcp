@@ -165,6 +165,32 @@ async def list_tools() -> List[Tool]:
                 },
                 "required": ["parent_id", "title", "properties"]
             }
+        ),
+        Tool(
+            name="update_database",
+            description="Update an existing database in Notion",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "database_id": {
+                        "type": "string",
+                        "description": "ID of the database to update"
+                    },
+                    "title": {
+                        "type": "string",
+                        "description": "New title for the database (optional)"
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "New description for the database (optional)"
+                    },
+                    "properties": {
+                        "type": "object",
+                        "description": "Updated schema definition for database properties. To remove a property, set its value to null."
+                    }
+                },
+                "required": ["database_id"]
+            }
         )
     ]
 
@@ -280,6 +306,38 @@ async def call_tool(name: str, arguments: Any) -> Sequence[TextContent | Embedde
                 properties=properties,
                 icon=arguments.get("icon"),
                 cover=arguments.get("cover")
+            )
+            
+            return [
+                TextContent(
+                    type="text",
+                    text=database.model_dump_json(indent=2)
+                )
+            ]
+            
+        elif name == "update_database":
+            if not isinstance(arguments, dict):
+                raise ValueError("Invalid arguments")
+                
+            database_id = arguments.get("database_id")
+            if not database_id:
+                raise ValueError("database_id is required")
+            
+            title = None
+            if "title" in arguments and arguments["title"]:
+                title_text = arguments["title"]
+                title = [{"type": "text", "text": {"content": title_text, "link": None}}]
+                
+            description = None
+            if "description" in arguments and arguments["description"]:
+                desc_text = arguments["description"]
+                description = [{"type": "text", "text": {"content": desc_text, "link": None}}]
+            
+            database = await notion_client.update_database(
+                database_id=database_id,
+                title=title,
+                description=description,
+                properties=arguments.get("properties")
             )
             
             return [
