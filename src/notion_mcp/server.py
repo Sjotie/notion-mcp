@@ -152,13 +152,15 @@ async def list_tools() -> List[Tool]:
                     },
                     "properties": {
                         "type": "object",
-                        "description": "Schema definition for database properties"
+                        "description": "Schema definition for database properties (e.g., {\"Name\": {\"title\": {}}, \"Description\": {\"rich_text\": {}}})"
                     },
-                    "parent_type": {
-                        "type": "string",
-                        "description": "Type of parent (page_id or workspace)",
-                        "default": "page_id",
-                        "enum": ["page_id", "workspace"]
+                    "icon": {
+                        "type": "object",
+                        "description": "Optional icon for the database (e.g., {\"type\": \"emoji\", \"emoji\": \"🔍\"})"
+                    },
+                    "cover": {
+                        "type": "object",
+                        "description": "Optional cover image for the database"
                     }
                 },
                 "required": ["parent_id", "title", "properties"]
@@ -265,19 +267,19 @@ async def call_tool(name: str, arguments: Any) -> Sequence[TextContent | Embedde
             parent_id = arguments.get("parent_id")
             title_text = arguments.get("title")
             properties = arguments.get("properties")
-            parent_type = arguments.get("parent_type", "page_id")
             
             if not parent_id or not title_text or not properties:
                 raise ValueError("parent_id, title, and properties are required")
             
             # Convert simple title string to rich text array format
-            title = [{"type": "text", "text": {"content": title_text}}]
+            title = [{"type": "text", "text": {"content": title_text, "link": None}}]
             
             database = await notion_client.create_database(
                 parent_id=parent_id,
                 title=title,
                 properties=properties,
-                parent_type=parent_type
+                icon=arguments.get("icon"),
+                cover=arguments.get("cover")
             )
             
             return [

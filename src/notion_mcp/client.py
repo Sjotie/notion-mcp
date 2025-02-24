@@ -122,7 +122,8 @@ class NotionClient:
         parent_id: str,
         title: List[Dict[str, Any]],
         properties: Dict[str, Any],
-        parent_type: str = "page_id"
+        icon: Optional[Dict[str, Any]] = None,
+        cover: Optional[Dict[str, Any]] = None
     ) -> Database:
         """Create a new database.
         
@@ -130,16 +131,26 @@ class NotionClient:
             parent_id: ID of the parent page
             title: Database title as rich text array
             properties: Database properties schema
-            parent_type: Type of parent (page_id or workspace)
+            icon: Optional icon for the database
+            cover: Optional cover for the database
             
         Returns:
             The created database
         """
         body = {
-            "parent": {parent_type: parent_id},
+            "parent": {
+                "type": "page_id",
+                "page_id": parent_id
+            },
             "title": title,
             "properties": properties
         }
+        
+        if icon:
+            body["icon"] = icon
+            
+        if cover:
+            body["cover"] = cover
         
         async with httpx.AsyncClient() as client:
             response = await client.post(
