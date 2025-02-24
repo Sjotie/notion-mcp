@@ -137,6 +137,9 @@ class NotionClient:
         Returns:
             The created database
         """
+        # Ensure parent_id is properly formatted (remove dashes if present)
+        parent_id = parent_id.replace("-", "")
+        
         body = {
             "parent": {
                 "type": "page_id",
@@ -146,11 +149,18 @@ class NotionClient:
             "properties": properties
         }
         
-        if icon:
+        # Set default emoji if icon is specified but emoji is empty
+        if icon and icon.get("type") == "emoji" and not icon.get("emoji"):
+            icon["emoji"] = "📄"  # Default document emoji
+            body["icon"] = icon
+        elif icon:
             body["icon"] = icon
             
         if cover:
             body["cover"] = cover
+            
+        # Log the request body for debugging
+        logger.info(f"Creating database with body: {body}")
         
         async with httpx.AsyncClient() as client:
             response = await client.post(

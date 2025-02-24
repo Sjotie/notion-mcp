@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional, Sequence
 import os
 from datetime import datetime
 import logging
+import json
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -300,13 +301,53 @@ async def call_tool(name: str, arguments: Any) -> Sequence[TextContent | Embedde
             # Convert simple title string to rich text array format
             title = [{"type": "text", "text": {"content": title_text, "link": None}}]
             
-            database = await notion_client.create_database(
-                parent_id=parent_id,
-                title=title,
-                properties=properties,
-                icon=arguments.get("icon"),
-                cover=arguments.get("cover")
-            )
+            # Ensure icon has a valid emoji if type is emoji
+            icon = arguments.get("icon")
+            if icon and isinstance(icon, dict) and icon.get("type") == "emoji" and not icon.get("emoji"):
+                icon["emoji"] = "📄"  # Default document emoji
+            
+            try:
+                database = await notion_client.create_database(
+                    parent_id=parent_id,
+                    title=title,
+                    properties=properties,
+                    icon=icon,
+                    cover=arguments.get("cover")
+                )
+                
+                return [
+                    TextContent(
+                        type="text",
+                        text=database.model_dump_json(indent=2)
+                    )
+                ]
+            except Exception as e:
+                error_msg = str(e)
+                logger.error(f"Database creation error: {error_msg}")
+                
+                # Try to provide more helpful error information
+                if "400" in error_msg:
+                    return [
+                        TextContent(
+                            type="text",
+                            text=f"Error 400: Bad Request. Common issues include:\n"
+                                 f"1. Invalid parent_id format (should be 32 characters without dashes)\n"
+                                 f"2. Missing required fields in properties\n"
+                                 f"3. Invalid property configurations\n\n"
+                                 f"Original error: {error_msg}\n\n"
+                                 f"Request data:\n"
+                                 f"parent_id: {parent_id}\n"
+                                 f"title: {title_text}\n"
+                                 f"properties: {json.dumps(properties, indent=2)}"
+                        )
+                    ]
+                else:
+                    return [
+                        TextContent(
+                            type="text",
+                            text=f"Error: {error_msg}"
+                        )
+                    ]
             
             return [
                 TextContent(
