@@ -1,9 +1,13 @@
 """Notion API client implementation."""
 
 import os
+import logging
 from typing import Any, Dict, List, Optional
 import httpx
 from .models.notion import Database, Page, SearchResults, PropertyValue
+
+# Set up logging
+logger = logging.getLogger('notion_mcp.client')
 
 class NotionClient:
     """Client for interacting with the Notion API."""
