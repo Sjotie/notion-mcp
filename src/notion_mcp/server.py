@@ -112,6 +112,46 @@ async def list_tools() -> List[Tool]:
             }
         ),
         Tool(
+            name="get_block",
+            description="Retrieve a specific block by its ID",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "block_id": {
+                        "type": "string",
+                        "description": "ID of the block to retrieve (with or without dashes)"
+                    }
+                },
+                "required": ["block_id"]
+            }
+        ),
+        Tool(
+            name="update_block",
+            description="Update the content of a specific block or archive/restore it",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "block_id": {
+                        "type": "string",
+                        "description": "ID of the block to update (with or without dashes)"
+                    },
+                    "block_type": {
+                        "type": "string",
+                        "description": "Type of the block (paragraph, heading_1, to_do, etc.)"
+                    },
+                    "content": {
+                        "type": "object",
+                        "description": "Content for the block based on its type. Examples:\n- Paragraph: {\"rich_text\": [{\"text\": {\"content\": \"Updated text\"}}]}\n- To-do: {\"rich_text\": [{\"text\": {\"content\": \"Task\"}}], \"checked\": true}\n- Heading: {\"rich_text\": [{\"text\": {\"content\": \"Heading\"}}], \"is_toggleable\": false}"
+                    },
+                    "archived": {
+                        "type": "boolean",
+                        "description": "Whether to archive (true) or restore (false) the block"
+                    }
+                },
+                "required": ["block_id", "block_type", "content"]
+            }
+        ),
+        Tool(
             name="query_database",
             description="Query items from a Notion database with optional filtering and sorting",
             inputSchema={
@@ -586,6 +626,91 @@ async def call_tool(name: str, arguments: Any) -> Sequence[TextContent | Embedde
                 )
             ]
             
+        elif name == "get_block":
+            if not isinstance(arguments, dict):
+                raise ValueError("Invalid arguments")
+                
+            block_id = arguments.get("block_id")
+            if not block_id:
+                raise ValueError("block_id is required")
+                
+            try:
+                block = await notion_client.get_block(block_id=block_id)
+                return [
+                    TextContent(
+                        type="text",
+                        text=json.dumps(block, indent=2)
+                    )
+                ]
+            except Exception as e:
+                error_msg = str(e)
+                logger.error(f"Error retrieving block: {error_msg}")
+                return [
+                    TextContent(
+                        type="text",
+                        text=f"Error retrieving block: {error_msg}"
+                    )
+                ]
+                
+        elif name == "update_block":
+            if not isinstance(arguments, dict):
+                raise ValueError("Invalid arguments")
+                
+            block_id = arguments.get("block_id")
+            block_type = arguments.get("block_type")
+            content = arguments.get("content")
+            archived = arguments.get("archived")
+            
+            if not block_id or not block_type or not content:
+                raise ValueError("block_id, block_type, and content are required")
+                
+            try:
+                block = await notion_client.update_block(
+                    block_id=block_id,
+                    block_type=block_type,
+                    content=content,
+                    archived=archived
+                )
+                
+                return [
+                    TextContent(
+                        type="text",
+                        text=f"Successfully updated block {block_id}\n\n" +
+                             f"Response:\n{json.dumps(block, indent=2)}"
+                    )
+                ]
+            except Exception as e:
+                error_msg = str(e)
+                logger.error(f"Error updating block: {error_msg}")
+                
+                # Provide more helpful error information
+                if "400" in error_msg:
+                    return [
+                        TextContent(
+                            type="text",
+                            text=f"Error 400: Bad Request. Common issues include:\n"
+                                 f"1. Invalid block_id format\n"
+                                 f"2. Incorrect block_type\n"
+                                 f"3. Invalid content structure for the block type\n"
+                                 f"4. Trying to remove toggle from a heading with children\n\n"
+                                 f"Original error: {error_msg}"
+                        )
+                    ]
+                elif "404" in error_msg:
+                    return [
+                        TextContent(
+                            type="text",
+                            text=f"Error 404: Not Found. The block ID doesn't exist, has been archived, or the integration doesn't have access to it.\n\n"
+                                 f"Original error: {error_msg}"
+                        )
+                    ]
+                else:
+                    return [
+                        TextContent(
+                            type="text",
+                            text=f"Error updating block: {error_msg}"
+                        )
+                    ]
         else:
             raise ValueError(f"Unknown tool: {name}")
             

@@ -301,6 +301,64 @@ class NotionClient:
             )
             response.raise_for_status()
             return response.json()
+            
+    async def update_block(
+        self,
+        block_id: str,
+        block_type: str,
+        content: Dict[str, Any],
+        archived: Optional[bool] = None
+    ) -> Dict[str, Any]:
+        """Update a block's content or archive status.
+        
+        Args:
+            block_id: The ID of the block to update
+            block_type: The type of block (paragraph, heading_1, to_do, etc.)
+            content: The content for the block based on its type
+            archived: Whether to archive (true) or restore (false) the block
+            
+        Returns:
+            Dictionary containing the updated block
+        """
+        # Ensure block_id is properly formatted (remove dashes if present)
+        block_id = block_id.replace("-", "")
+        
+        # Prepare request body
+        body = {block_type: content}
+        if archived is not None:
+            body["archived"] = archived
+            
+        # Log the request for debugging
+        logger.info(f"Updating block {block_id} of type {block_type}")
+        
+        async with httpx.AsyncClient() as client:
+            response = await client.patch(
+                f"{self.base_url}/blocks/{block_id}",
+                headers=self.headers,
+                json=body
+            )
+            response.raise_for_status()
+            return response.json()
+            
+    async def get_block(self, block_id: str) -> Dict[str, Any]:
+        """Retrieve a block by its ID.
+        
+        Args:
+            block_id: The ID of the block to retrieve
+            
+        Returns:
+            Dictionary containing the block
+        """
+        # Ensure block_id is properly formatted (remove dashes if present)
+        block_id = block_id.replace("-", "")
+        
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"{self.base_url}/blocks/{block_id}",
+                headers=self.headers
+            )
+            response.raise_for_status()
+            return response.json()
     
     async def search(
         self,
