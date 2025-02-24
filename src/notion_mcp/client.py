@@ -213,6 +213,84 @@ class NotionClient:
             response.raise_for_status()
             return Database(**response.json())
     
+    async def get_page(self, page_id: str) -> Page:
+        """Retrieve a page by its ID.
+        
+        Args:
+            page_id: The ID of the page to retrieve
+            
+        Returns:
+            The page object
+        """
+        # Ensure page_id is properly formatted (remove dashes if present)
+        page_id = page_id.replace("-", "")
+        
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"{self.base_url}/pages/{page_id}",
+                headers=self.headers
+            )
+            response.raise_for_status()
+            return Page(**response.json())
+    
+    async def get_block_children(
+        self, 
+        block_id: str,
+        start_cursor: Optional[str] = None,
+        page_size: int = 100
+    ) -> Dict[str, Any]:
+        """Retrieve the children blocks of a block.
+        
+        Args:
+            block_id: The ID of the block (page or block)
+            start_cursor: Cursor for pagination
+            page_size: Number of results per page
+            
+        Returns:
+            Dictionary containing the block children
+        """
+        # Ensure block_id is properly formatted (remove dashes if present)
+        block_id = block_id.replace("-", "")
+        
+        params = {"page_size": page_size}
+        if start_cursor:
+            params["start_cursor"] = start_cursor
+            
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"{self.base_url}/blocks/{block_id}/children",
+                headers=self.headers,
+                params=params
+            )
+            response.raise_for_status()
+            return response.json()
+    
+    async def append_block_children(
+        self,
+        block_id: str,
+        children: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
+        """Append blocks to a parent block.
+        
+        Args:
+            block_id: The ID of the parent block (page or block)
+            children: List of block objects to append
+            
+        Returns:
+            Dictionary containing the response
+        """
+        # Ensure block_id is properly formatted (remove dashes if present)
+        block_id = block_id.replace("-", "")
+        
+        async with httpx.AsyncClient() as client:
+            response = await client.patch(
+                f"{self.base_url}/blocks/{block_id}/children",
+                headers=self.headers,
+                json={"children": children}
+            )
+            response.raise_for_status()
+            return response.json()
+    
     async def search(
         self,
         query: str = "",
@@ -221,7 +299,18 @@ class NotionClient:
         start_cursor: Optional[str] = None,
         page_size: int = 100
     ) -> SearchResults:
-        """Search Notion."""
+        """Search Notion for pages or databases.
+        
+        Args:
+            query: Search query string
+            filter: Optional filter criteria
+            sort: Optional sort criteria
+            start_cursor: Cursor for pagination
+            page_size: Number of results per page
+            
+        Returns:
+            SearchResults object containing the results
+        """
         body = {
             "query": query,
             "page_size": page_size
