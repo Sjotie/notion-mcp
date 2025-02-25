@@ -1,56 +1,93 @@
-# Notion MCP Server
+# Notion MCP - Enhanced Notion Integration for AI Assistants
 
-A Model Context Protocol (MCP) server implementation for Notion integration, providing a standardized interface for interacting with Notion's API.
+A powerful Model Context Protocol (MCP) implementation that enables AI assistants to interact with your Notion workspace through function calling.
 
-## Features
+## 🚀 Features
 
-- List and query Notion databases
-- Create and update pages
-- Search across Notion workspace
-- Full async/await support
-- Type-safe with Pydantic models
-- Proper error handling
+- **Database Operations** - Create, query, update, and list databases
+- **Page Management** - Create, retrieve, update, and search pages
+- **Block Operations** - Get, update, and append content blocks
+- **Rich Content Support** - Work with various Notion block types
+- **Robust Error Handling** - Detailed error messages with troubleshooting guidance
+- **Type-Safe Implementation** - Built with Pydantic models for reliability
 
-## Installation
+## 📋 Prerequisites
+
+- Python 3.10 or higher
+- A Notion integration with appropriate capabilities
+- Notion API key
+
+## 🔧 Installation
 
 1. Clone the repository:
-```bash
-git clone https://github.com/ccabanillas/notion-mcp.git
-cd notion-mcp
+   ```bash
+   git clone https://github.com/Sjotie/notion-mcp.git
+   cd notion-mcp
+   ```
+
+2. Create a virtual environment:
+   ```bash
+   python -m venv .venv-notion
+   ```
+
+3. Activate the virtual environment:
+   - Windows: `.venv-notion\Scripts\activate`
+   - macOS/Linux: `source .venv-notion/bin/activate`
+
+4. Install dependencies:
+   ```bash
+   pip install -e .
+   ```
+
+5. Create a `.env` file in the project root with your Notion API key:
+   ```
+   NOTION_API_KEY=your_notion_integration_token
+   ```
+
+## 🔌 Integration with Claude Desktop
+
+To use with Claude Desktop, update your `claude_desktop_config.json` file:
+
+```json
+"notion-mcp": {
+    "command": "C:\\path\\to\\notion-mcp\\.venv-notion\\Scripts\\python", 
+    "args": ["-m", "notion_mcp"],
+    "cwd": "C:\\path\\to\\notion-mcp"
+}
 ```
 
-2. Create a virtual environment and install dependencies:
-```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-pip install -e .
-```
+Adjust the paths according to your system:
+- Windows: `.venv-notion\\Scripts\\python`
+- macOS/Linux: `.venv-notion/bin/python`
 
-3. Create a `.env` file in the project root:
-```bash
-NOTION_API_KEY=your_notion_integration_token
-```
+## 🛠️ Available Tools
 
-## Usage
+| Tool | Description |
+|------|-------------|
+| `list_databases` | List all accessible Notion databases |
+| `query_database` | Query items from a database with filtering and sorting |
+| `create_database` | Create a new database with custom schema |
+| `update_database` | Update a database's title, description, or schema |
+| `create_page` | Create a new page in a database with properties and content |
+| `update_page` | Update a page's properties or archive status |
+| `get_page` | Retrieve a specific page by ID |
+| `get_page_content` | Retrieve the content blocks of a page |
+| `append_page_content` | Add content blocks to a page or block |
+| `get_block` | Retrieve a specific block by ID |
+| `update_block` | Update a block's content or archive status |
+| `search` | Search for pages or databases by title or content |
 
-1. Test the server(it should just run without errors):
+## 🧪 Testing
+
+To verify the server is running correctly:
+
 ```bash
 python -m notion_mcp
 ```
 
-2. To actually use it with Claude Desktop as intended you need to adjust your claude_desktop_config.json file
+The server should start without errors and be ready to accept connections.
 
-```
-"notion-mcp": {
-            "command": "/Users/username/Projects/notion-mcp/venv/bin/python3", <--Path your virtual environment
-            "args": ["-m", "notion_mcp"],
-            "cwd": "/Users/username/Projects/notion-mcp" <-- Path to your project
-    },
-```
-
-## Development
-
-### Project Structure
+## 📁 Project Structure
 
 ```
 notion-mcp/
@@ -69,35 +106,24 @@ notion-mcp/
 └── README.md
 ```
 
-### Running Tests
+## 🔐 Setting Up Notion Integration
 
-```bash
-pytest
-```
-
-## Configuration
-
-The server requires a Notion integration token. To set this up:
-
-1. Go to https://www.notion.so/my-integrations
+1. Go to [Notion Integrations](https://www.notion.so/my-integrations)
 2. Create a new integration
-3. Copy the integration token
-4. Add it to your `.env` file
+3. Grant the necessary capabilities (read, update, insert content)
+4. Copy the integration token to your `.env` file
+5. Share the Notion pages/databases you want to access with your integration
 
-## Contributing
+## 👥 Contributing
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-## License
+## 📄 License
 
-MIT License - Use at your own risk
+MIT License - See LICENSE file for details
 
-## Acknowledgments
+## 🙏 Acknowledgments
 
-- Built to work with Claude Desktop
-- Uses Notion's API
-- Special thanks to [danhilse], I referenced his [notion-mcp-server](https://github.com/danhilse/notion-mcp-server) project
+- Original implementation by [ccabanillas](https://github.com/ccabanillas/notion-mcp)
+- Inspired by [danhilse's notion-mcp-server](https://github.com/danhilse/notion-mcp-server)
+- Built to work with Claude Desktop and other AI assistants
