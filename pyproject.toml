@@ -1,9 +1,10 @@
 [project]
-name = "notion-mcp"
+name = "notion-mcp-enhanced"
 version = "0.1.0"
-description = "MCP server for Notion integration"
+description = "Enhanced MCP server for Notion integration with improved tools and error handling"
 authors = [
-    {name = "Chase Cabanillas", email = "chase.cabanillas@gmail.com"}
+    {name = "Chase Cabanillas", email = "chase.cabanillas@gmail.com"},
+    {name = "Sjotie", email = ""}
 ]
 dependencies = [
     "mcp>=0.1.0",
